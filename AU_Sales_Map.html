@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Halter AU Sales Reps — Location Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --halter-green:    #294E3B;
+    --halter-lime:     #C7EA9D;
+    --halter-cactus:   #4F7359;
+    --halter-mantis:   #6FBE84;
+    --halter-sage:     #B9D49C;
+    --halter-mint:     #E7F5EA;
+    --halter-cream:    #FDF9EF;
+    --halter-beef:     #F7F5F1;
+    --halter-platinum: #DFE1E4;
+    --halter-sky:      #AAD6F4;
+    --halter-navy:     #293C4E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--halter-beef);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+  .page { width: 100%; max-width: 780px; }
+
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 {
+    font-size: 22px; font-weight: 700; color: var(--halter-green); margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .page-header p { font-size: 14px; color: var(--halter-cactus); }
+
+  .card {
+    background: var(--halter-cream);
+    border: 1px solid var(--halter-platinum);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--halter-green); margin-bottom: 4px; }
+  .card-sub { font-size: 13px; color: var(--halter-cactus); margin-bottom: 18px; }
+
+  #map { width: 100%; background: var(--halter-mint); border-radius: 10px; overflow: hidden; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 16px; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--halter-cactus); }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+  .pin-swatch { width: 10px; height: 10px; border-radius: 50%; background: #D94F3A; border: 1.5px solid #fff; outline: 1px solid #D94F3A; display: inline-block; flex-shrink: 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat { background: var(--halter-mint); border-radius: 10px; padding: 14px 16px; border: 1px solid var(--halter-sage); }
+  .stat-label { font-size: 12px; color: var(--halter-cactus); margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 700; color: var(--halter-green); margin-bottom: 2px; }
+  .stat-sub { font-size: 11px; color: var(--halter-cactus); opacity: 0.8; }
+
+  .section-divider {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--halter-green); margin: 20px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--halter-sage);
+  }
+
+  .accordion { border: 1px solid var(--halter-platinum); border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+  .accordion-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px; cursor: pointer; user-select: none;
+    background: var(--halter-beef); transition: background 0.15s;
+  }
+  .accordion-header:hover { background: var(--halter-mint); }
+  .accordion-header.open { background: var(--halter-mint); }
+  .acc-left { display: flex; align-items: center; gap: 10px; }
+  .acc-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .acc-title { font-size: 14px; font-weight: 600; color: var(--halter-green); }
+  .acc-count { font-size: 12px; color: var(--halter-cactus); }
+  .acc-arrow { font-size: 12px; color: var(--halter-cactus); transition: transform 0.2s; display: inline-block; }
+  .acc-arrow.open { transform: rotate(180deg); }
+  .accordion-body { display: none; border-top: 1px solid var(--halter-platinum); }
+  .accordion-body.open { display: block; }
+
+  .rep-table { width: 100%; border-collapse: collapse; }
+  .rep-table thead tr { background: var(--halter-beef); }
+  .rep-table th {
+    font-size: 11px; font-weight: 600; color: var(--halter-cactus);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--halter-platinum);
+  }
+  .rep-table td { font-size: 13px; color: var(--halter-navy); padding: 9px 14px; border-bottom: 1px solid var(--halter-mint); vertical-align: middle; }
+  .rep-table tr:last-child td { border-bottom: none; }
+  .rep-table tr:hover td { background: var(--halter-mint); }
+  .role-tag { font-size: 11px; color: var(--halter-cactus); }
+  .loc-pin { font-size: 12px; color: var(--halter-green); font-weight: 600; }
+  .loc-region { font-size: 12px; color: var(--halter-cactus); font-weight: 500; }
+  .loc-state { font-size: 12px; color: #9B9B97; }
+  .sub-header td {
+    background: var(--halter-beef); font-size: 11px; font-weight: 600;
+    color: var(--halter-cactus); letter-spacing: 0.04em;
+    padding: 6px 14px; border-bottom: 1px solid var(--halter-platinum);
+    text-transform: uppercase;
+  }
+  .src-tag { font-size: 10px; color: var(--halter-mantis); margin-left: 4px; }
+  .alias-tag { font-size: 11px; color: #9B9B97; }
+
+  #tip {
+    display: none; position: fixed;
+    background: var(--halter-cream); border: 1px solid var(--halter-sage); border-radius: 10px;
+    padding: 10px 14px; font-size: 13px; pointer-events: none; max-width: 240px;
+    z-index: 100; box-shadow: 0 4px 16px rgba(41,78,59,0.12);
+    font-family: 'Inter', -apple-system, sans-serif;
+  }
+  .tip-name { font-size: 13px; font-weight: 600; color: var(--halter-green); margin-bottom: 2px; }
+  .tip-role { font-size: 12px; color: var(--halter-cactus); margin-bottom: 2px; }
+  .tip-rep  { font-size: 12px; color: var(--halter-navy); line-height: 1.6; }
+  .tip-count { font-size: 11px; color: var(--halter-cactus); margin-bottom: 6px; }
+
+  .loc-legend {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+    padding: 10px 14px; background: var(--halter-mint); border-radius: 8px;
+    border: 1px solid var(--halter-sage);
+  }
+  .loc-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--halter-cactus); }
+  .loc-legend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+  footer {
+    text-align: center; font-size: 12px; color: var(--halter-cactus);
+    opacity: 0.7; margin-top: 16px; padding-bottom: 8px;
+  }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .card { padding: 20px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <h1>Halter AU — sales rep locations</h1>
+    <p>Eastern &amp; southern states · last updated 24 Apr 2026</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title">AU coverage map</p>
+    <p class="card-sub">Hover a highlighted state or pin for rep details</p>
+    <div id="map"></div>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#AAD6F4;border:1px solid #293C4E;"></span>Eastern states (NSW, QLD) · 19 reps</div>
+      <div class="legend-item"><span class="swatch" style="background:#B9D49C;border:1px solid #294E3B;"></span>Southern states (VIC, TAS) · 20 reps</div>
+      <div class="legend-item"><span class="pin-swatch"></span>City-level location confirmed</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Team breakdown</p>
+    <p class="card-sub">Click a team to expand the full rep list</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total reps</div>
+        <div class="stat-value">39</div>
+        <div class="stat-sub">Across 5 states</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">NSW</div>
+        <div class="stat-value">9</div>
+        <div class="stat-sub">+ 1 head (NSW/QLD)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">QLD</div>
+        <div class="stat-value">9</div>
+        <div class="stat-sub">Eastern states</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">City pins</div>
+        <div class="stat-value">9</div>
+        <div class="stat-sub">Updated via Slack</div>
+      </div>
+    </div>
+
+    <div class="loc-legend">
+      <div class="loc-legend-item"><span class="loc-legend-dot" style="background:#294E3B;"></span><span style="color:#294E3B;font-weight:600;">Green</span> = city confirmed (pin on map)</div>
+      <div class="loc-legend-item"><span class="loc-legend-dot" style="background:#4F7359;"></span><span style="color:#4F7359;font-weight:500;">Teal</span> = region/area known</div>
+      <div class="loc-legend-item"><span class="loc-legend-dot" style="background:#9B9B97;"></span><span style="color:#9B9B97;">Grey</span> = state only</div>
+    </div>
+
+    <p class="section-divider">Eastern states</p>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggle(this)">
+        <div class="acc-left">
+          <span class="acc-dot" style="background:#AAD6F4;border:1px solid #293C4E;"></span>
+          <span class="acc-title">NSW team</span>
+          <span class="acc-count">9 reps</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <table class="rep-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Location</th></tr></thead>
+          <tbody>
+            <tr class="sub-header"><td colspan="3">Head</td></tr>
+            <tr><td>Alicia Wells <span class="alias-tag">(Leish)</span></td><td class="role-tag">Head of Eastern States</td><td class="loc-pin">📍 Sydney, NSW<span class="src-tag">Slack</span></td></tr>
+            <tr class="sub-header"><td colspan="3">NSW reps</td></tr>
+            <tr><td>Lizzie Harrington</td><td class="role-tag">Regional Sales Manager (NSW)</td><td class="loc-state">NSW</td></tr>
+            <tr><td>Ellie Bennett</td><td class="role-tag">Territory Manager</td><td class="loc-region">New England, NSW<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Ellen Brennan</td><td class="role-tag">Territory Manager</td><td class="loc-state">NSW</td></tr>
+            <tr><td>Ethan Brien</td><td class="role-tag">Territory Manager</td><td class="loc-state">NSW</td></tr>
+            <tr><td>Jojo Crothers</td><td class="role-tag">Associate Territory Manager</td><td class="loc-state">NSW</td></tr>
+            <tr><td>Melissa Gooseman <span class="alias-tag">(Mel)</span></td><td class="role-tag">Territory Manager</td><td class="loc-pin">📍 Wagga Wagga, NSW<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Matt Narracott</td><td class="role-tag">Territory Manager</td><td class="loc-pin">📍 Southern Highlands / Illawarra, NSW<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Will Atkinson</td><td class="role-tag">Territory Manager</td><td class="loc-region">Riverina, NSW<span class="src-tag">Slack</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggle(this)">
+        <div class="acc-left">
+          <span class="acc-dot" style="background:#AAD6F4;border:1px solid #293C4E;"></span>
+          <span class="acc-title">QLD team</span>
+          <span class="acc-count">9 reps</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <table class="rep-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Location</th></tr></thead>
+          <tbody>
+            <tr><td>Gemma Denby</td><td class="role-tag">Regional Sales Manager</td><td class="loc-state">QLD</td></tr>
+            <tr><td>Amelia Macfarlane</td><td class="role-tag">Territory Manager</td><td class="loc-region">Central QLD / Wide Bay-Burnett<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Danny De Rosa</td><td class="role-tag">Territory Manager</td><td class="loc-region">Toowoomba / Central QLD<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Holly Turnbull</td><td class="role-tag">Territory Manager</td><td class="loc-state">QLD</td></tr>
+            <tr><td>Izabella Hurst <span class="alias-tag">(Izzy)</span></td><td class="role-tag">Territory Manager</td><td class="loc-region">Central QLD / Wide Bay-Burnett<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Jess Bidgood</td><td class="role-tag">Territory Manager</td><td class="loc-pin">📍 Rockhampton, QLD<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Kirsty Browne</td><td class="role-tag">Key Account Manager</td><td class="loc-pin">📍 Brisbane, QLD<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Callum Woodhouse</td><td class="role-tag">Territory Manager</td><td class="loc-state">QLD</td></tr>
+            <tr><td>Tayler Feigl</td><td class="role-tag">Corporate Sales Manager</td><td class="loc-region">Corporate accounts, QLD<span class="src-tag">Slack</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggle(this)">
+        <div class="acc-left">
+          <span class="acc-dot" style="background:#B9D49C;border:1px solid #294E3B;"></span>
+          <span class="acc-title">TAS — Key Account</span>
+          <span class="acc-count">1 rep</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <table class="rep-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Location</th></tr></thead>
+          <tbody>
+            <tr><td>Naomi O'Leary</td><td class="role-tag">Key Account Manager</td><td class="loc-pin">📍 Wynyard, TAS<span class="src-tag">Notion</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="section-divider">Southern states</p>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggle(this)">
+        <div class="acc-left">
+          <span class="acc-dot" style="background:#B9D49C;border:1px solid #294E3B;"></span>
+          <span class="acc-title">VIC — Conor's BD team</span>
+          <span class="acc-count">8 reps</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <table class="rep-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Location</th></tr></thead>
+          <tbody>
+            <tr class="sub-header"><td colspan="3">Head of Southern States</td></tr>
+            <tr><td>Hamish Irvine</td><td class="role-tag">Head of Southern States</td><td class="loc-pin">📍 Melbourne, VIC<span class="src-tag">Notion</span></td></tr>
+            <tr class="sub-header"><td colspan="3">BD team</td></tr>
+            <tr><td>Conor Gleeson</td><td class="role-tag">Regional Sales Manager (VIC)</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Caitlin Adlam</td><td class="role-tag">Business Development Executive</td><td class="loc-pin">📍 Gippsland, VIC<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Will Hatfield</td><td class="role-tag">Territory Manager</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Jennah Horton</td><td class="role-tag">Territory Manager</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Trav McKenzie</td><td class="role-tag">Business Development Executive</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Annaliese Nix</td><td class="role-tag">Associate Business Development Executive</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Alex Scattergood</td><td class="role-tag">Territory Manager</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Matt White</td><td class="role-tag">Business Development Executive</td><td class="loc-state">VIC</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggle(this)">
+        <div class="acc-left">
+          <span class="acc-dot" style="background:#B9D49C;border:1px solid #294E3B;"></span>
+          <span class="acc-title">VIC — Brook's AM team</span>
+          <span class="acc-count">6 reps</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <table class="rep-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Location</th></tr></thead>
+          <tbody>
+            <tr><td>Brook Kennedy</td><td class="role-tag">Senior Regional Sales Manager</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Jack Kreuzberger</td><td class="role-tag">Territory Manager</td><td class="loc-region">South Australia<span class="src-tag">Slack</span></td></tr>
+            <tr><td>Logan Searle</td><td class="role-tag">Territory Manager</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Nicci Teitge</td><td class="role-tag">Territory Manager</td><td class="loc-state">VIC</td></tr>
+            <tr><td>Hamish Clausen</td><td class="role-tag">Account Manager</td><td class="loc-pin">📍 Northern VIC<span class="src-tag">Notion</span></td></tr>
+            <tr><td>Alysha Bodman</td><td class="role-tag">Territory Manager</td><td class="loc-pin">📍 Gippsland, VIC<span class="src-tag">New hire Apr 2026</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggle(this)">
+        <div class="acc-left">
+          <span class="acc-dot" style="background:#B9D49C;border:1px solid #294E3B;"></span>
+          <span class="acc-title">TAS team</span>
+          <span class="acc-count">5 reps</span>
+        </div>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <table class="rep-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Location</th></tr></thead>
+          <tbody>
+            <tr><td>Brett Good</td><td class="role-tag">Head of Tasmania</td><td class="loc-state">TAS</td></tr>
+            <tr><td>Gracie Barden</td><td class="role-tag">Account Manager</td><td class="loc-state">TAS</td></tr>
+            <tr><td>Maria Cassineri</td><td class="role-tag">Account Manager</td><td class="loc-state">TAS</td></tr>
+            <tr><td>Chris Heffernan</td><td class="role-tag">Account Manager</td><td class="loc-state">TAS</td></tr>
+            <tr><td>Innocent Rugoho</td><td class="role-tag">Account Manager</td><td class="loc-state">TAS</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Source: BambooHR org chart · Notion workspace · Slack · last updated 24 Apr 2026 · Halter internal use only</footer>
+</div>
+
+<div id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.acc-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+}
+
+const EASTERN = new Set(['New South Wales','Queensland']);
+const SOUTHERN = new Set(['Victoria','Tasmania']);
+const SKIP = new Set(['Jervis Bay Territory','Ashmore and Cartier Islands','Christmas Island','Cocos (Keeling) Islands','Coral Sea Islands','Heard Island and McDonald Islands','Norfolk Island']);
+
+const stateReps = {
+  'New South Wales': ['Alicia Wells – Head of Eastern States (Sydney)','Lizzie Harrington – RSM','Ellie Bennett (New England)','Ellen Brennan','Ethan Brien','Jojo Crothers','Melissa Gooseman (Wagga Wagga)','Matt Narracott (Southern Highlands)','Will Atkinson (Riverina)'],
+  'Queensland': ['Gemma Denby – RSM','Amelia Macfarlane (Central QLD)','Danny De Rosa (Toowoomba / Central QLD)','Holly Turnbull','Izzy Hurst (Central QLD / Wide Bay)','Jess Bidgood (Rockhampton)','Kirsty Browne (Brisbane)','Callum Woodhouse','Tayler Feigl (Corporate QLD)'],
+  'Victoria': ['Hamish Irvine – Head of Southern States (Melbourne)','Conor Gleeson – RSM','Brook Kennedy – Sr RSM','Caitlin Adlam (Gippsland)','Will Hatfield','Jennah Horton','Trav McKenzie','Annaliese Nix','Alex Scattergood','Matt White','Jack Kreuzberger (SA territory)','Logan Searle','Nicci Teitge','Hamish Clausen (Northern VIC)','Alysha Bodman (Gippsland)'],
+  'Tasmania': ['Brett Good – Head of TAS','Gracie Barden','Maria Cassineri','Chris Heffernan','Innocent Rugoho',"Naomi O'Leary (Wynyard)"]
+};
+
+const pins = [
+  { name:'Alicia Wells', role:'Head of Eastern States', loc:'Sydney, NSW', lat:-33.87, lng:151.21 },
+  { name:'Melissa Gooseman', role:'Territory Manager', loc:'Wagga Wagga, NSW', lat:-35.12, lng:147.37 },
+  { name:'Matt Narracott', role:'Territory Manager', loc:'Southern Highlands / Illawarra, NSW', lat:-34.55, lng:150.45 },
+  { name:'Jess Bidgood', role:'Territory Manager', loc:'Rockhampton, QLD', lat:-23.38, lng:150.51 },
+  { name:'Kirsty Browne', role:'Key Account Manager', loc:'Brisbane, QLD', lat:-27.47, lng:153.02 },
+  { name:'Hamish Irvine', role:'Head of Southern States', loc:'Melbourne, VIC', lat:-37.81, lng:144.96 },
+  { name:'Caitlin Adlam', role:'Business Development Executive', loc:'Gippsland, VIC', lat:-38.2, lng:146.8 },
+  { name:'Hamish Clausen', role:'Account Manager', loc:'Northern VIC', lat:-36.5, lng:145.4 },
+  { name:"Naomi O'Leary", role:'Key Account Manager', loc:'Wynyard, TAS', lat:-40.99, lng:145.73 }
+];
+
+const W = 720, H = 620;
+const svg = d3.select('#map').append('svg')
+  .attr('viewBox', `0 0 ${W} ${H}`)
+  .attr('width','100%');
+
+const projection = d3.geoMercator()
+  .scale(820)
+  .center([134,-28])
+  .translate([W*0.47, H*0.47]);
+
+const path = d3.geoPath(projection);
+const tip = document.getElementById('tip');
+
+function showTip(evt, html) {
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  let x = evt.clientX + 16;
+  let y = evt.clientY + 16;
+  if (x + 260 > window.innerWidth) x = evt.clientX - 270;
+  if (y + 220 > window.innerHeight) y = evt.clientY - 230;
+  tip.style.left = x+'px';
+  tip.style.top = y+'px';
+}
+function hideTip() { tip.style.display='none'; }
+
+d3.json('https://cdn.jsdelivr.net/npm/datamaps@0.5.10/src/js/data/aus.topo.json').then(topo => {
+  const key = Object.keys(topo.objects)[0];
+  const feats = topojson.feature(topo, topo.objects[key]).features.filter(d => !SKIP.has(d.properties.name));
+
+  svg.selectAll('path.state')
+    .data(feats).join('path')
+    .attr('class','state')
+    .attr('d', path)
+    .attr('fill', d => {
+      const n = d.properties.name;
+      if (EASTERN.has(n)) return '#AAD6F4';
+      if (SOUTHERN.has(n)) return '#B9D49C';
+      return '#DFE1E4';
+    })
+    .attr('stroke', d => {
+      const n = d.properties.name;
+      if (EASTERN.has(n)) return '#293C4E';
+      if (SOUTHERN.has(n)) return '#294E3B';
+      return '#C4C4BF';
+    })
+    .attr('stroke-width', d => (EASTERN.has(d.properties.name)||SOUTHERN.has(d.properties.name)) ? 1.3 : 0.8)
+    .style('cursor', d => stateReps[d.properties.name] ? 'pointer' : 'default')
+    .on('mousemove', function(evt, d) {
+      const n = d.properties.name;
+      if (!stateReps[n]) return;
+      const reps = stateReps[n];
+      showTip(evt, `<div class="tip-name">${n}</div><div class="tip-count">${reps.length} reps</div><div class="tip-rep">${reps.map(r=>'· '+r).join('<br>')}</div>`);
+    })
+    .on('mouseleave', hideTip);
+
+  const abbr = {'New South Wales':'NSW','Queensland':'QLD','Victoria':'VIC','Tasmania':'TAS','Western Australia':'WA','South Australia':'SA','Northern Territory':'NT','Australian Capital Territory':'ACT'};
+
+  svg.selectAll('text.label')
+    .data(feats).join('text')
+    .attr('class','label')
+    .attr('text-anchor','middle')
+    .attr('dominant-baseline','central')
+    .attr('font-family','Inter, -apple-system, sans-serif')
+    .attr('font-weight', d => (EASTERN.has(d.properties.name)||SOUTHERN.has(d.properties.name)) ? '700' : '400')
+    .attr('fill', d => {
+      if (EASTERN.has(d.properties.name)) return '#293C4E';
+      if (SOUTHERN.has(d.properties.name)) return '#294E3B';
+      return '#9B9B97';
+    })
+    .attr('font-size', d => {
+      const n = d.properties.name;
+      if (n==='Tasmania') return 11;
+      if (n==='Australian Capital Territory') return 0;
+      if (n==='Western Australia'||n==='Queensland'||n==='New South Wales') return 13;
+      return 12;
+    })
+    .attr('pointer-events','none')
+    .attr('x', d => {
+      let [cx] = path.centroid(d);
+      if (d.properties.name==='Victoria') cx -= 30;
+      return cx;
+    })
+    .attr('y', d => path.centroid(d)[1])
+    .text(d => abbr[d.properties.name] || '');
+
+  const pinG = svg.selectAll('g.pin').data(pins).join('g')
+    .attr('class','pin')
+    .attr('transform', d => {
+      const [x,y] = projection([d.lng, d.lat]);
+      return `translate(${x},${y})`;
+    })
+    .style('cursor','pointer');
+
+  pinG.append('circle').attr('r',10).attr('fill','transparent');
+  pinG.append('circle').attr('r',4.5).attr('fill','#D94F3A').attr('stroke','#FDF9EF').attr('stroke-width',1.5);
+
+  pinG.on('mousemove', function(evt,d) {
+    showTip(evt, `<div class="tip-name">${d.name}</div><div class="tip-role">${d.role}</div><div class="tip-rep">${d.loc}</div>`);
+  }).on('mouseleave', hideTip);
+});
+</script>
+</body>
+</html>
